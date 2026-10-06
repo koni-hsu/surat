@@ -25,8 +25,7 @@
    */
   var FUNGSI_CACHE = {
     getAllSurat: 1, getDashboardStats: 1, getSuratMenungguPersetujuan: 1, getSuratSelesai: 1,
-    getSuratSiapArsip: 1, getDaftarArsip: 1, getDashboardArsipStats: 1, getLaporanHarian: 1,
-    getMasterSKPD: 1, getJenisSuratList: 1, getMasterKategoriArsip: 1, getDaftarLokasiArsip: 1,
+    getLaporanHarian: 1, getMasterSKPD: 1, getJenisSuratList: 1,
     getTrackingByNoRegistrasi: 1, getTrackingPublik: 1
   };
   var AWALAN_CACHE = 'sparta_swr:';
