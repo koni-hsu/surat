@@ -1114,27 +1114,34 @@
     return m ? (m[3] + '-' + Number(m[2])) : '';
   }
 
-  // Isi pilihan Filter Bulan dari SELURUH data yang diterima dari server (bukan dari baris yang tampil).
+  // Isi pilihan Filter Bulan: SEMUA bulan (Januari-Desember) untuk setiap tahun yang relevan,
+  // walaupun belum ada surat pada bulan tersebut. Tahun yang ditampilkan = tahun ini + tahun yang ada di data.
   function isiOpsiFilterBulanSemuaSurat() {
     const sel = document.getElementById('filterBulanSemuaSurat');
     if (!sel) return;
-    const ada = {}; let adaKosong = false;
+    const tahun = {}; let adaKosong = false;
+    tahun[new Date().getFullYear()] = true;
     DAFTAR_SURAT_CACHE.forEach(function (s) {
       const k = bulanKeySurat(s);
-      if (k) ada[k] = true; else adaKosong = true;
+      if (k) tahun[k.split('-')[0]] = true; else adaKosong = true;
     });
-    const keys = Object.keys(ada).sort(function (a, b) {
-      const pa = a.split('-'), pb = b.split('-');
-      return (Number(pb[0]) - Number(pa[0])) || (Number(pb[1]) - Number(pa[1]));
-    });
+    const daftarTahun = Object.keys(tahun).map(Number).sort(function (a, b) { return b - a; }); // terbaru di atas
+
     let html = '<option value="">Semua Bulan</option>';
-    keys.forEach(function (k) {
-      const p = k.split('-');
-      html += '<option value="' + k + '">' + NAMA_BULAN_ID[Number(p[1]) - 1] + ' ' + p[0] + '</option>';
+    daftarTahun.forEach(function (th) {
+      html += '<optgroup label="' + th + '">';
+      html += '<option value="tahun-' + th + '">Semua Bulan ' + th + '</option>';
+      for (let b = 1; b <= 12; b++) {
+        html += '<option value="' + th + '-' + b + '">' + NAMA_BULAN_ID[b - 1] + ' ' + th + '</option>';
+      }
+      html += '</optgroup>';
     });
     if (adaKosong) html += '<option value="kosong">(Tanggal tidak terbaca)</option>';
     sel.innerHTML = html;
-    if (FILTER_BULAN_SEMUA_SURAT && (ada[FILTER_BULAN_SEMUA_SURAT] || (FILTER_BULAN_SEMUA_SURAT === 'kosong' && adaKosong))) {
+
+    // Pertahankan pilihan sebelumnya bila masih tersedia di daftar.
+    const masihAda = FILTER_BULAN_SEMUA_SURAT && Array.prototype.some.call(sel.options, function (o) { return o.value === FILTER_BULAN_SEMUA_SURAT; });
+    if (masihAda) {
       sel.value = FILTER_BULAN_SEMUA_SURAT;
     } else {
       FILTER_BULAN_SEMUA_SURAT = '';
@@ -1187,6 +1194,10 @@
     // Filter Bulan
     if (FILTER_BULAN_SEMUA_SURAT === 'kosong') {
       list = list.filter(function (s) { return !bulanKeySurat(s); });
+    } else if (FILTER_BULAN_SEMUA_SURAT.indexOf('tahun-') === 0) {
+      // "Semua Bulan <tahun>": cocokkan tahunnya saja
+      const th = FILTER_BULAN_SEMUA_SURAT.slice(6);
+      list = list.filter(function (s) { return bulanKeySurat(s).split('-')[0] === th; });
     } else if (FILTER_BULAN_SEMUA_SURAT) {
       list = list.filter(function (s) { return bulanKeySurat(s) === FILTER_BULAN_SEMUA_SURAT; });
     }
