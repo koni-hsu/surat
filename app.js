@@ -153,6 +153,18 @@
     loadDashboard();
     loadKotakMasukSaya(); // semua role persuratan (termasuk Super Admin) langsung melihat kotak masuknya
     initRegistrasiForm();
+    prefetchDaftarSurat();
+  }
+
+  // Ambil Daftar Surat Masuk di latar belakang segera setelah login, supaya saat menunya dibuka
+  // datanya sudah siap (hasilnya masuk cache sesi; permintaan yang sama digabung oleh gas-api.js).
+  function prefetchDaftarSurat() {
+    try {
+      google.script.run
+        .withSuccessHandler(function (list) { DAFTAR_SURAT_CACHE = list || []; })
+        .withFailureHandler(function () { /* diamkan - dimuat ulang saat menu dibuka */ })
+        .getAllSurat(CURRENT_USER.token);
+    } catch (e) { /* abaikan */ }
   }
 
   function keluarDariAplikasi() {
@@ -1198,11 +1210,25 @@
     }
     if (counter) counter.textContent = 'Total: ' + list.length + ' surat' + ((STATUS_FILTER_AKTIF || FILTER_BULAN_SEMUA_SURAT) ? ' (terfilter)' : '');
 
+    BATAS_TAMPIL_SURAT = UKURAN_HALAMAN_SURAT; // filter/pencarian/muat ulang -> mulai dari halaman pertama
     renderTabelSemuaSurat(list);
+  }
+
+  // Menggambar ribuan baris sekaligus membuat browser macet -> tampilkan bertahap.
+  const UKURAN_HALAMAN_SURAT = 50;
+  let BATAS_TAMPIL_SURAT = UKURAN_HALAMAN_SURAT;
+  let SURAT_TERFILTER = [];
+
+  function tampilkanLebihBanyakSurat() {
+    BATAS_TAMPIL_SURAT += UKURAN_HALAMAN_SURAT;
+    renderTabelSemuaSurat(SURAT_TERFILTER);
   }
 
   function renderTabelSemuaSurat(list) {
     const tbody = document.querySelector('#tabelSemuaSurat tbody');
+    SURAT_TERFILTER = list;
+    const totalList = list.length;
+    if (totalList > BATAS_TAMPIL_SURAT) list = list.slice(0, BATAS_TAMPIL_SURAT);
     if (!list.length) {
       tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Tidak ada data yang cocok.</td></tr>';
       return;
@@ -1227,7 +1253,10 @@
         '<td><span class="pill ' + statusPillClass(s.StatusAkhir) + '">' + s.StatusAkhir + '</span></td>' +
         '<td>' + aksi + '</td>' +
         '</tr>';
-    }).join('');
+    }).join('') + (totalList > list.length
+      ? '<tr><td colspan="9" style="text-align:center;padding:14px;"><button type="button" class="btn btn-outline" onclick="tampilkanLebihBanyakSurat()">Tampilkan ' +
+        Math.min(UKURAN_HALAMAN_SURAT, totalList - list.length) + ' lagi (' + list.length + ' dari ' + totalList + ' ditampilkan)</button></td></tr>'
+      : '');
   }
 
   /* ============================================================
