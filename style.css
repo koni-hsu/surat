@@ -367,6 +367,15 @@
   .filter-row .field{ min-width:150px; }
   .filter-row .field label{ margin-bottom:6px; }
 
+  /* Filter Bulan: tombol pilihan berjajar ke samping (membungkus), bukan daftar panjang ke bawah */
+  .chip-bulan-grup{ display:flex; flex-wrap:wrap; gap:6px; }
+  .chip-bulan{
+    padding:7px 13px; border:1.5px solid var(--border); border-radius:999px; background:#fff;
+    color:var(--navy); font:inherit; font-size:13px; font-weight:600; cursor:pointer; line-height:1.2;
+  }
+  .chip-bulan:hover{ background:#eef4fa; border-color:var(--navy-light); }
+  .chip-bulan.aktif{ background:var(--navy); border-color:var(--navy); color:#fff; }
+
   .empty-state{ text-align:center; color:var(--muted); padding:34px 0; font-size:13.5px; }
 
   .toast{
