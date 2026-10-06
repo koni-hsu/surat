@@ -1103,7 +1103,8 @@
    * ============================================================ */
 
   let DAFTAR_SURAT_CACHE = [];
-  let FILTER_BULAN_SEMUA_SURAT = ''; // '' = semua | 'yyyy-M' (mis. '2026-7') | 'kosong' = tanggal tidak terbaca
+  let FILTER_BULAN_SEMUA_SURAT = ''; // '' = semua bulan | '1'..'12'
+  let FILTER_TAHUN_SEMUA_SURAT = ''; // '' = semua tahun | 'yyyy' | 'kosong' = tanggal tidak terbaca
   const NAMA_BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   let STATUS_FILTER_AKTIF = null; // null | 'Dalam Proses' | 'Selesai / Disetujui' | 'DITOLAK_PERBAIKAN' | 'Informasi (Tanpa Persetujuan)'
 
@@ -1114,39 +1115,34 @@
     return m ? (m[3] + '-' + Number(m[2])) : '';
   }
 
-  // Isi pilihan Filter Bulan: SEMUA bulan (Januari-Desember) untuk setiap tahun yang relevan,
-  // walaupun belum ada surat pada bulan tersebut. Tahun yang ditampilkan = tahun ini + tahun yang ada di data.
+  // Filter Bulan dan Filter Tahun dibuat terpisah.
+  // Bulan: selalu Januari-Desember. Tahun: tahun berjalan + semua tahun yang ada di data.
   function isiOpsiFilterBulanSemuaSurat() {
-    const sel = document.getElementById('filterBulanSemuaSurat');
-    if (!sel) return;
+    const selB = document.getElementById('filterBulanSemuaSurat');
+    const selT = document.getElementById('filterTahunSemuaSurat');
+    if (!selB || !selT) return;
+
+    let htmlB = '<option value="">Semua Bulan</option>';
+    for (let b = 1; b <= 12; b++) htmlB += '<option value="' + b + '">' + NAMA_BULAN_ID[b - 1] + '</option>';
+    selB.innerHTML = htmlB;
+    selB.value = FILTER_BULAN_SEMUA_SURAT;
+
     const tahun = {}; let adaKosong = false;
     tahun[new Date().getFullYear()] = true;
     DAFTAR_SURAT_CACHE.forEach(function (s) {
       const k = bulanKeySurat(s);
       if (k) tahun[k.split('-')[0]] = true; else adaKosong = true;
     });
-    const daftarTahun = Object.keys(tahun).map(Number).sort(function (a, b) { return b - a; }); // terbaru di atas
-
-    let html = '<option value="">Semua Bulan</option>';
-    daftarTahun.forEach(function (th) {
-      html += '<optgroup label="' + th + '">';
-      html += '<option value="tahun-' + th + '">Semua Bulan ' + th + '</option>';
-      for (let b = 1; b <= 12; b++) {
-        html += '<option value="' + th + '-' + b + '">' + NAMA_BULAN_ID[b - 1] + ' ' + th + '</option>';
-      }
-      html += '</optgroup>';
+    let htmlT = '<option value="">Semua Tahun</option>';
+    Object.keys(tahun).map(Number).sort(function (a, b) { return b - a; }).forEach(function (th) {
+      htmlT += '<option value="' + th + '">' + th + '</option>';
     });
-    if (adaKosong) html += '<option value="kosong">(Tanggal tidak terbaca)</option>';
-    sel.innerHTML = html;
+    if (adaKosong) htmlT += '<option value="kosong">(Tanggal tidak terbaca)</option>';
+    selT.innerHTML = htmlT;
 
-    // Pertahankan pilihan sebelumnya bila masih tersedia di daftar.
-    const masihAda = FILTER_BULAN_SEMUA_SURAT && Array.prototype.some.call(sel.options, function (o) { return o.value === FILTER_BULAN_SEMUA_SURAT; });
-    if (masihAda) {
-      sel.value = FILTER_BULAN_SEMUA_SURAT;
-    } else {
-      FILTER_BULAN_SEMUA_SURAT = '';
-      sel.value = '';
-    }
+    const masihAda = FILTER_TAHUN_SEMUA_SURAT && Array.prototype.some.call(selT.options, function (o) { return o.value === FILTER_TAHUN_SEMUA_SURAT; });
+    if (!masihAda) FILTER_TAHUN_SEMUA_SURAT = '';
+    selT.value = FILTER_TAHUN_SEMUA_SURAT;
   }
 
   function loadDaftarSuratMasuk() {
@@ -1191,15 +1187,16 @@
       list = list.filter(function (s) { return s.StatusAkhir === STATUS_FILTER_AKTIF; });
     }
 
-    // Filter Bulan
-    if (FILTER_BULAN_SEMUA_SURAT === 'kosong') {
+    // Filter Tahun & Filter Bulan (berdiri sendiri-sendiri, bisa dikombinasikan)
+    if (FILTER_TAHUN_SEMUA_SURAT === 'kosong') {
       list = list.filter(function (s) { return !bulanKeySurat(s); });
-    } else if (FILTER_BULAN_SEMUA_SURAT.indexOf('tahun-') === 0) {
-      // "Semua Bulan <tahun>": cocokkan tahunnya saja
-      const th = FILTER_BULAN_SEMUA_SURAT.slice(6);
-      list = list.filter(function (s) { return bulanKeySurat(s).split('-')[0] === th; });
-    } else if (FILTER_BULAN_SEMUA_SURAT) {
-      list = list.filter(function (s) { return bulanKeySurat(s) === FILTER_BULAN_SEMUA_SURAT; });
+    } else {
+      if (FILTER_TAHUN_SEMUA_SURAT) {
+        list = list.filter(function (s) { return bulanKeySurat(s).split('-')[0] === FILTER_TAHUN_SEMUA_SURAT; });
+      }
+      if (FILTER_BULAN_SEMUA_SURAT) {
+        list = list.filter(function (s) { return bulanKeySurat(s).split('-')[1] === FILTER_BULAN_SEMUA_SURAT; });
+      }
     }
 
     // Terapkan juga kata kunci pencarian teks (kalau ada) di atas hasil filter status
@@ -1219,7 +1216,7 @@
         chip.style.display = 'none';
       }
     }
-    if (counter) counter.textContent = 'Total: ' + list.length + ' surat' + ((STATUS_FILTER_AKTIF || FILTER_BULAN_SEMUA_SURAT) ? ' (terfilter)' : '');
+    if (counter) counter.textContent = 'Total: ' + list.length + ' surat' + ((STATUS_FILTER_AKTIF || FILTER_BULAN_SEMUA_SURAT || FILTER_TAHUN_SEMUA_SURAT) ? ' (terfilter)' : '');
 
     BATAS_TAMPIL_SURAT = UKURAN_HALAMAN_SURAT; // filter/pencarian/muat ulang -> mulai dari halaman pertama
     renderTabelSemuaSurat(list);
@@ -1498,6 +1495,15 @@
   document.addEventListener('change', function (e) {
     if (e.target && e.target.id === 'filterBulanSemuaSurat') {
       FILTER_BULAN_SEMUA_SURAT = e.target.value || '';
+      terapkanFilterSemuaSurat();
+    }
+    if (e.target && e.target.id === 'filterTahunSemuaSurat') {
+      FILTER_TAHUN_SEMUA_SURAT = e.target.value || '';
+      // "(Tanggal tidak terbaca)" tidak bisa digabung dengan bulan -> kosongkan pilihan bulan
+      if (FILTER_TAHUN_SEMUA_SURAT === 'kosong') {
+        FILTER_BULAN_SEMUA_SURAT = '';
+        const sb = document.getElementById('filterBulanSemuaSurat'); if (sb) sb.value = '';
+      }
       terapkanFilterSemuaSurat();
     }
   });
