@@ -1003,7 +1003,7 @@
       '.ket b{font-size:9pt}' +
       '</style></head><body>' +
       '<div class="judul">SPARTA</div>' +
-      '<div class="instansi">Sekretariat Daerah Kabupaten</div>' +
+      '<div class="instansi">Sistem Pelayanan Administrasi Persuratan</div>' +
       '<div class="garis"></div>' +
       '<div class="label">No. Registrasi</div>' +
       '<div class="noreg">' + escHtmlQr(d.noRegistrasi) + '</div>' +
