@@ -6,21 +6,21 @@
   const URUTAN_TAHAP_BAKU_CLIENT = ['Paraf Asisten', 'Paraf Staf Ahli', 'Paraf Sekda', 'Tanda Tangan Sekda', 'Tanda Tangan Wakil Bupati', 'Tanda Tangan Bupati'];
 
   // Tab yang tersedia untuk masing-masing role
+  const MENU_STANDAR = [
+    {p:'dashboard', label:'📊 Dashboard'},
+    {p:'registrasi', label:'📝 Registrasi Surat'},
+    {p:'disposisi', label:'✅ Menunggu Persetujuan'},
+    {p:'semuasurat', label:'📋 Daftar Surat Masuk'},
+    {p:'suratselesai', label:'✔️ Surat Selesai'},
+    {p:'laporan', label:'📁 Laporan'}
+  ];
   const TAB_PER_ROLE = {
-    'Admin TU'      : [
-      {p:'dashboard', label:'📊 Dashboard'},
-      {p:'registrasi', label:'📝 Registrasi Surat Masuk'},
-      {p:'tracking', label:'🔍 Tracking Surat'},
-      {p:'disposisi', label:'✅ Menunggu Persetujuan (Super Admin)'},
-      {p:'semuasurat', label:'📋 Daftar Surat Masuk'},
-      {p:'suratselesai', label:'✔️ Surat Selesai'},
-      {p:'laporan', label:'📁 Laporan'}
-    ],
-    'Asisten'       : [ {p:'dashboard', label:'📊 Dashboard'}, {p:'registrasi', label:'📝 Registrasi Surat Masuk'}, {p:'tracking', label:'🔍 Tracking Surat'}, {p:'disposisi', label:'✅ Menunggu Persetujuan'}, {p:'semuasurat', label:'📋 Daftar Surat Masuk'}, {p:'suratselesai', label:'✔️ Surat Selesai'}, {p:'laporan', label:'📁 Laporan'} ],
-    'Staf Ahli'     : [ {p:'dashboard', label:'📊 Dashboard'}, {p:'registrasi', label:'📝 Registrasi Surat Masuk'}, {p:'tracking', label:'🔍 Tracking Surat'}, {p:'disposisi', label:'✅ Menunggu Persetujuan'}, {p:'semuasurat', label:'📋 Daftar Surat Masuk'}, {p:'suratselesai', label:'✔️ Surat Selesai'}, {p:'laporan', label:'📁 Laporan'} ],
-    'Sekda'         : [ {p:'dashboard', label:'📊 Dashboard'}, {p:'registrasi', label:'📝 Registrasi Surat Masuk'}, {p:'tracking', label:'🔍 Tracking Surat'}, {p:'disposisi', label:'✅ Menunggu Persetujuan'}, {p:'semuasurat', label:'📋 Daftar Surat Masuk'}, {p:'suratselesai', label:'✔️ Surat Selesai'}, {p:'laporan', label:'📁 Laporan'} ],
-    'Wakil Bupati'  : [ {p:'dashboard', label:'📊 Dashboard'}, {p:'registrasi', label:'📝 Registrasi Surat Masuk'}, {p:'tracking', label:'🔍 Tracking Surat'}, {p:'disposisi', label:'✅ Menunggu Persetujuan'}, {p:'semuasurat', label:'📋 Daftar Surat Masuk'}, {p:'suratselesai', label:'✔️ Surat Selesai'}, {p:'laporan', label:'📁 Laporan'} ],
-    'Bupati'        : [ {p:'dashboard', label:'📊 Dashboard'}, {p:'registrasi', label:'📝 Registrasi Surat Masuk'}, {p:'tracking', label:'🔍 Tracking Surat'}, {p:'disposisi', label:'✅ Menunggu Persetujuan'}, {p:'semuasurat', label:'📋 Daftar Surat Masuk'}, {p:'suratselesai', label:'✔️ Surat Selesai'}, {p:'laporan', label:'📁 Laporan'} ]
+    'Admin TU'      : MENU_STANDAR,
+    'Asisten'       : MENU_STANDAR,
+    'Staf Ahli'     : MENU_STANDAR,
+    'Sekda'         : MENU_STANDAR,
+    'Wakil Bupati'  : MENU_STANDAR,
+    'Bupati'        : MENU_STANDAR
   };
 
   // Role dengan hak Super Admin: bisa memproses tahap persetujuan apa pun
