@@ -367,14 +367,30 @@
   .filter-row .field{ min-width:150px; }
   .filter-row .field label{ margin-bottom:6px; }
 
-  /* Filter Bulan: tombol pilihan berjajar ke samping (membungkus), bukan daftar panjang ke bawah */
-  .chip-bulan-grup{ display:flex; flex-wrap:wrap; gap:6px; }
-  .chip-bulan{
-    padding:7px 13px; border:1.5px solid var(--border); border-radius:999px; background:#fff;
-    color:var(--navy); font:inherit; font-size:13px; font-weight:600; cursor:pointer; line-height:1.2;
+  /* Pemilih Bulan & Tahun (popup kisi bulan, gaya month-picker) */
+  .mp-wrap{ position:relative; min-width:230px; }
+  .mp-trigger{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%;
+    padding:10px 12px; border:1.5px solid var(--border); border-radius:9px; background:#fff;
+    color:var(--navy); font:inherit; font-size:14px; cursor:pointer; text-align:left;
   }
-  .chip-bulan:hover{ background:#eef4fa; border-color:var(--navy-light); }
-  .chip-bulan.aktif{ background:var(--navy); border-color:var(--navy); color:#fff; }
+  .mp-trigger:hover, .mp-trigger.buka{ border-color:var(--navy-light); }
+  .mp-pop{
+    position:absolute; top:calc(100% + 6px); left:0; z-index:60; width:300px; max-width:calc(100vw - 32px);
+    background:#fff; border:1px solid var(--border); border-radius:10px; box-shadow:0 10px 30px rgba(5,19,36,.22);
+    padding:12px;
+  }
+  .mp-head{ display:flex; align-items:center; justify-content:space-between; background:#f1efe8; border-radius:7px; padding:4px; margin-bottom:8px; }
+  .mp-head .mp-tahun{ font-weight:700; font-size:14px; color:var(--navy); }
+  .mp-nav{ border:none; background:none; font-size:18px; line-height:1; width:32px; height:30px; border-radius:6px; cursor:pointer; color:var(--navy); }
+  .mp-nav:hover{ background:#e2dfd3; }
+  .mp-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+  .mp-cell{ border:1.5px solid transparent; background:none; padding:11px 0; border-radius:6px; font:inherit; font-size:13.5px; color:#1a1a1a; cursor:pointer; }
+  .mp-cell:hover{ border-color:var(--navy-light); }
+  .mp-cell.aktif{ background:#2f6fe4; border-color:#2257b8; color:#fff; font-weight:700; }
+  .mp-foot{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px 12px; margin-top:10px; font-size:13px; }
+  .mp-link{ border:none; background:none; padding:2px 0; font:inherit; color:#2a6fd1; cursor:pointer; }
+  .mp-link:hover{ text-decoration:underline; }
 
   .empty-state{ text-align:center; color:var(--muted); padding:34px 0; font-size:13.5px; }
 
