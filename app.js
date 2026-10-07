@@ -1106,7 +1106,7 @@
     const legend = items.map(function (i, idx) {
       const warna = SPARTA_CHART_PALETTE[idx % SPARTA_CHART_PALETTE.length];
       const persen = total > 0 ? Math.round((i[jumlahKey] / total) * 100) : 0;
-      return '<div class="donut-legend-item"><span class="dot" style="background:' + warna + ';"></span>' + i[labelKey] + ' (' + i[jumlahKey] + ' &bull; ' + persen + '%)</div>';
+      return '<div class="donut-legend-item"><span class="dot" style="background:' + warna + ';"></span>' + i[labelKey] + ' (' + persen + '%)</div>';
     }).join('');
 
     // Angka di atas tiap irisan: diletakkan di tengah ketebalan cincin sesuai sudut tengah irisan
