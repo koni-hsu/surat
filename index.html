@@ -514,7 +514,8 @@
 
       <!-- ============== LAPORAN HARIAN & BULANAN ============== -->
       <div class="page" id="page-laporan">
-        <div class="card">
+        <!-- Menu Laporan berupa dropdown (Harian / Bulanan): hanya satu kartu yang tampil sekaligus. -->
+        <div class="card" id="cardLaporanHarian">
           <h2>Laporan Harian</h2>
           <div class="desc">Ringkasan aktivitas persuratan hari ini.</div>
           <div class="stats-grid" id="statsHarian">
@@ -533,7 +534,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card laporan-sembunyi" id="cardLaporanBulanan">
           <h2>Laporan Bulanan / Filter</h2>
           <div class="desc">Filter berdasarkan bulan, tahun, dan jenis surat, lalu ekspor ke PDF atau Excel.</div>
 
@@ -724,10 +725,62 @@
         }
       }
 
-      function buka(noReg) {
+      function esc(t) { return String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+      function teksSel(td) {
+        if (!td) return '';
+        var c = td.querySelector('.sel-clamp');
+        return ((c && c.title) || td.textContent || '').trim();
+      }
+
+      // Kepala pop up langsung tampil dari data yang sudah ada di baris tabel (tanpa menunggu server);
+      // riwayat & alur persetujuan menyusul begitu data tiba.
+      function kepalaInstan(tr) {
+        var t = tr.children;
+        if (t.length < 8) return '<div class="empty-state">Memuat tracking surat...</div>';
+        var perihal = teksSel(t[4]), dari = teksSel(t[2]), tujuan = teksSel(t[6]);
+        return '<div class="no-reg-result">' +
+          '<div class="no">' + esc(t[0].textContent.trim()) + '</div>' +
+          (perihal ? '<div class="perihal">' + esc(perihal) + '</div>' : '') +
+          '<div class="field-row">' +
+            '<span class="item"><strong>Jenis:</strong> ' + esc(t[5].textContent.trim()) + '</span>' +
+            '<span class="item"><strong>Dari:</strong> ' + esc(dari) + '</span>' +
+            '<span class="item"><strong>Tanggal Masuk:</strong> ' + esc(t[1].textContent.trim()) + '</span>' +
+            '<span class="item"><strong>Tujuan:</strong> ' + esc(tujuan) + '</span>' +
+          '</div></div>' +
+          '<div class="empty-state">Memuat riwayat &amp; alur persetujuan...</div>';
+      }
+
+      // Muat data tracking lebih awal begitu kursor berhenti di atas sebuah baris (hasil masuk cache),
+      // sehingga saat baris diklik pop up langsung terisi.
+      var tundaPrefetch = null, sudahPrefetch = {};
+      function prefetch(tr) {
+        if (!tr || tr.children.length < 3) return;
+        var noReg = (tr.getAttribute('data-noreg') || '').trim();
+        if (!noReg || sudahPrefetch[noReg]) return;
+        sudahPrefetch[noReg] = true;
+        setTimeout(function () { delete sudahPrefetch[noReg]; }, 60000);
+        try {
+          google.script.run.withSilentErrors()
+            .withSuccessHandler(function () {}).withFailureHandler(function () {})
+            .getTrackingByNoRegistrasi(noReg);
+        } catch (e) { /* abaikan */ }
+      }
+      function jadwalkanPrefetch(e) {
+        var tr = e.target.closest ? e.target.closest('tbody tr') : null;
+        clearTimeout(tundaPrefetch);
+        if (!tr) return;
+        tundaPrefetch = setTimeout(function () { prefetch(tr); }, 120);
+      }
+      tabel.addEventListener('mouseover', jadwalkanPrefetch);
+      tabel.addEventListener('touchstart', function (e) {
+        var tr = e.target.closest ? e.target.closest('tbody tr') : null;
+        prefetch(tr);
+      }, { passive: true });
+
+      function buka(noReg, tr) {
         var myToken = ++token;
         lbl.textContent = noReg;
-        body.innerHTML = '<div class="empty-state">Memuat tracking surat...</div>';
+        body.innerHTML = tr ? kepalaInstan(tr) : '<div class="empty-state">Memuat tracking surat...</div>';
         overlay.classList.add('show');
 
         if (observer) observer.disconnect();
@@ -739,7 +792,10 @@
         var salin = function () {
           if (myToken !== token) return;
           var isi = proxyHasil.innerHTML.trim();
-          if (isi) body.innerHTML = isi;
+          if (!isi) return;
+          // "Mencari data..." hanya penanda sementara: biarkan kepala instan tetap tampil sampai hasil asli tiba.
+          if (/^<div class="empty-state">Mencari data/i.test(isi) && body.querySelector('.no-reg-result')) return;
+          body.innerHTML = isi;
         };
 
         observer = new MutationObserver(salin);
@@ -761,7 +817,7 @@
         if (!tr || !tabel.contains(tr) || tr.parentNode.tagName !== 'TBODY') return;
         if (tr.children.length < 3) return; // baris "Memuat data..." / kosong
         var noReg = (tr.getAttribute('data-noreg') || tr.children[0].textContent || '').trim();
-        if (noReg) buka(noReg);
+        if (noReg) buka(noReg, tr);
       });
 
       // Mode aman: buka halaman dengan ?safe=1 untuk mematikan perapian baris (uji pembanding).
