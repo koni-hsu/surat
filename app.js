@@ -1170,6 +1170,8 @@
 
     google.script.run
       .withSuccessHandler(function (stats) {
+        // Kelas grid menyesuaikan jumlah kotak: 4 kotak (role) atau 6 kotak (Admin TU)
+        grid.className = 'stats-grid' + (stats.papanRole ? ' stats-grid-role' : '');
         // Akun selain Admin TU: tampilkan 4 papan sesuai role yang login
         if (stats.papanRole) {
           const p = stats.papanRole;
@@ -1203,7 +1205,7 @@
         }
 
         const boxBulan = document.getElementById('chartBulanSurat');
-        if (boxBulan) renderVBarChart(boxBulan, stats.perBulan.map(function (b) { return { label: b.label, jumlah: b.jumlah }; }));
+        if (boxBulan) renderVBarChart(boxBulan, stats.perBulan.map(function (b) { return { label: String(b.label).replace(/\s\d{2}(\d{2})$/, ' $1'), jumlah: b.jumlah }; }));
 
         const boxJenis = document.getElementById('chartJenisSurat');
         if (boxJenis) renderDonutChart(boxJenis, stats.perJenisSurat, 'jenis', 'jumlah');
