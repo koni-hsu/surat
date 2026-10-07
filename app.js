@@ -1105,13 +1105,31 @@
 
     const legend = items.map(function (i, idx) {
       const warna = SPARTA_CHART_PALETTE[idx % SPARTA_CHART_PALETTE.length];
-      return '<div class="donut-legend-item"><span class="dot" style="background:' + warna + ';"></span>' + i[labelKey] + ' (' + i[jumlahKey] + ')</div>';
+      const persen = total > 0 ? Math.round((i[jumlahKey] / total) * 100) : 0;
+      return '<div class="donut-legend-item"><span class="dot" style="background:' + warna + ';"></span>' + i[labelKey] + ' (' + i[jumlahKey] + ' &bull; ' + persen + '%)</div>';
+    }).join('');
+
+    // Angka di atas tiap irisan: diletakkan di tengah ketebalan cincin sesuai sudut tengah irisan
+    // (conic-gradient mulai dari atas, searah jarum jam). Irisan < 3% tidak diberi angka agar tidak bertabrakan;
+    // nilainya tetap ada di legenda.
+    let kum = 0;
+    const angkaIrisan = items.map(function (i) {
+      const bagian = total > 0 ? i[jumlahKey] / total : 0;
+      const tengah = (kum + i[jumlahKey] / 2) / (total || 1);
+      kum += i[jumlahKey];
+      if (bagian < 0.03) return '';
+      const sudut = tengah * 2 * Math.PI;
+      const radius = 40; // % dari ukuran donat (tengah cincin)
+      const x = 50 + radius * Math.sin(sudut);
+      const y = 50 - radius * Math.cos(sudut);
+      return '<span class="donut-slice-label" style="left:' + x.toFixed(2) + '%;top:' + y.toFixed(2) + '%;">' + i[jumlahKey] + '</span>';
     }).join('');
 
     container.innerHTML =
       '<div class="donut-chart-wrap">' +
       '  <div class="donut-chart" style="background:conic-gradient(' + stops + ');">' +
-      '    <div class="donut-hole">' + total + '<br>Total</div>' +
+      angkaIrisan +
+      '    <div class="donut-hole"><div class="donut-total-num">' + total + '</div><div class="donut-total-text">Total</div></div>' +
       '  </div>' +
       '  <div class="donut-legend">' + legend + '</div>' +
       '</div>';
