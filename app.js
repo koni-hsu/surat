@@ -950,6 +950,80 @@
       if (link) window.open(link, '_blank');
       tutup();
     });
+
+    const btnQr = document.getElementById('btnCetakQrNotifWa');
+    if (btnQr) btnQr.addEventListener('click', function () {
+      if (DATA_QR_TERAKHIR) cetakQrThermal(DATA_QR_TERAKHIR);
+    });
+  }
+
+  /* ---------- Cetak QR Code tracking (kertas thermal / printer bluetooth) ---------- */
+  // Lebar kertas thermal dalam mm. Printer bluetooth umumnya 58 mm; ganti ke 80 bila memakai kertas 80 mm.
+  const LEBAR_KERTAS_THERMAL_MM = 58;
+  let DATA_QR_TERAKHIR = null; // { noRegistrasi, linkTracking, perihal, suratDariNama }
+
+  function escHtmlQr(t) {
+    return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function cetakQrThermal(d) {
+    if (typeof QRCode === 'undefined') {
+      showToast('Pustaka QR Code belum termuat. Periksa koneksi internet lalu coba lagi.', 'error');
+      return;
+    }
+    // Buat QR di elemen sementara, lalu ambil sebagai gambar PNG
+    const tmp = document.createElement('div');
+    tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
+    document.body.appendChild(tmp);
+    new QRCode(tmp, { text: d.linkTracking, width: 320, height: 320, correctLevel: QRCode.CorrectLevel.M });
+    const canvas = tmp.querySelector('canvas');
+    const img = tmp.querySelector('img');
+    const dataUrl = canvas ? canvas.toDataURL('image/png') : (img ? img.src : '');
+    document.body.removeChild(tmp);
+    if (!dataUrl) { showToast('Gagal membuat QR Code.', 'error'); return; }
+
+    const w = LEBAR_KERTAS_THERMAL_MM;
+    const qrMm = Math.min(w - 12, 46);
+    const html =
+      '<!DOCTYPE html><html><head><meta charset="utf-8"><title>QR ' + escHtmlQr(d.noRegistrasi) + '</title><style>' +
+      '@page{size:' + w + 'mm auto;margin:0}' +
+      '*{box-sizing:border-box}' +
+      'html,body{margin:0;padding:0;background:#fff}' +
+      'body{width:' + w + 'mm;padding:3mm 3mm 8mm;font-family:Arial,Helvetica,sans-serif;color:#000;text-align:center}' +
+      '.judul{font-size:13pt;font-weight:bold;letter-spacing:1px}' +
+      '.instansi{font-size:8pt;margin-top:1mm}' +
+      '.garis{border-top:1px dashed #000;margin:2.5mm 0}' +
+      '.label{font-size:8pt}' +
+      '.noreg{font-size:11pt;font-weight:bold;margin-top:0.5mm;word-break:break-all}' +
+      '.perihal{font-size:8.5pt;margin-top:1.5mm;word-break:break-word}' +
+      'img{width:' + qrMm + 'mm;height:' + qrMm + 'mm;display:block;margin:2mm auto;image-rendering:pixelated}' +
+      '.ket{font-size:8.5pt;line-height:1.35;margin-top:1mm}' +
+      '.ket b{font-size:9pt}' +
+      '</style></head><body>' +
+      '<div class="judul">SPARTA</div>' +
+      '<div class="instansi">Sekretariat Daerah Kabupaten</div>' +
+      '<div class="garis"></div>' +
+      '<div class="label">No. Registrasi</div>' +
+      '<div class="noreg">' + escHtmlQr(d.noRegistrasi) + '</div>' +
+      (d.perihal ? '<div class="perihal">Perihal: ' + escHtmlQr(d.perihal) + '</div>' : '') +
+      '<img src="' + dataUrl + '" alt="QR Code">' +
+      '<div class="ket"><b>Scan QR Code untuk melihat status surat</b></div>' +
+      '<div class="garis"></div>' +
+      '<div class="ket">Jika surat sudah selesai, proses tanda terima juga bisa melalui QR Code ini.</div>' +
+      '</body></html>';
+
+    const ifr = document.createElement('iframe');
+    ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+    document.body.appendChild(ifr);
+    const doc = ifr.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    setTimeout(function () {
+      try { ifr.contentWindow.focus(); ifr.contentWindow.print(); }
+      catch (e) { showToast('Gagal membuka dialog cetak: ' + e.message, 'error'); }
+      setTimeout(function () { if (ifr.parentNode) ifr.parentNode.removeChild(ifr); }, 60000);
+    }, 400);
   }
 
   function tampilkanKonfirmasiNotifWa(waInfo, noRegistrasi) {
@@ -959,6 +1033,18 @@
 
     document.getElementById('notifWaNoRegistrasi').textContent = noRegistrasi;
     document.getElementById('notifWaPreview').textContent = waInfo.pesan;
+
+    // Tombol QR Code hanya muncul setelah simpan registrasi (server mengirim linkTracking)
+    const btnQr = document.getElementById('btnCetakQrNotifWa');
+    if (btnQr) {
+      if (waInfo.linkTracking) {
+        DATA_QR_TERAKHIR = { noRegistrasi: noRegistrasi, linkTracking: waInfo.linkTracking, perihal: waInfo.perihal || '', suratDariNama: waInfo.suratDariNama || '' };
+        btnQr.style.display = 'flex';
+      } else {
+        DATA_QR_TERAKHIR = null;
+        btnQr.style.display = 'none';
+      }
+    }
 
     if (waInfo.waLink) {
       btnKirim.dataset.walink = waInfo.waLink;
@@ -1084,6 +1170,16 @@
 
     google.script.run
       .withSuccessHandler(function (stats) {
+        // Akun selain Admin TU: tampilkan 4 papan sesuai role yang login
+        if (stats.papanRole) {
+          const p = stats.papanRole;
+          NOREG_FILTER_DASHBOARD = { disetujui: p.noRegDisetujui || [], ditolak: p.noRegDitolak || [] };
+          grid.innerHTML =
+            '<div class="stat-box stat-box-clickable" onclick="bukaDaftarSuratStatus(null)"><div class="num">' + p.total + '</div><div class="label">Total Surat Masuk</div></div>' +
+            '<div class="stat-box amber stat-box-clickable" onclick="bukaHalamanDisposisi()"><div class="num">' + p.menunggu + '</div><div class="label">Menunggu Persetujuan</div></div>' +
+            '<div class="stat-box green stat-box-clickable" onclick="bukaDaftarSuratStatus(\'ROLE_DISETUJUI\')"><div class="num">' + p.disetujui + '</div><div class="label">Disetujui</div></div>' +
+            '<div class="stat-box red stat-box-clickable" onclick="bukaDaftarSuratStatus(\'ROLE_DITOLAK\')"><div class="num">' + p.ditolak + '</div><div class="label">Ditolak / Perlu Perbaikan</div></div>';
+        } else {
         grid.innerHTML =
           '<div class="stat-box stat-box-clickable" onclick="bukaDaftarSuratStatus(null)"><div class="num">' + stats.total + '</div><div class="label">Total Surat</div></div>' +
           '<div class="stat-box amber stat-box-clickable" onclick="bukaDaftarSuratStatus(\'Dalam Proses\')"><div class="num">' + stats.dalamProses + '</div><div class="label">Dalam Proses</div></div>' +
@@ -1104,6 +1200,7 @@
         // Hitung langsung dari kolom yang benar-benar dirender, baru rentangkan kotak persentase
         // (elemen terakhir) sampai ke ujung baris - supaya tidak ada ruang kosong tersisa.
         requestAnimationFrame(function () { sesuaikanLebarKotakPersentase(); });
+        }
 
         const boxBulan = document.getElementById('chartBulanSurat');
         if (boxBulan) renderVBarChart(boxBulan, stats.perBulan.map(function (b) { return { label: b.label, jumlah: b.jumlah }; }));
@@ -1141,6 +1238,7 @@
   let FILTER_TAHUN_SEMUA_SURAT = ''; // '' = semua tahun | 'yyyy' | 'kosong' = tanggal tidak terbaca
   const NAMA_BULAN_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   const NAMA_BULAN_SINGKAT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  let NOREG_FILTER_DASHBOARD = { disetujui: [], ditolak: [] }; // No Registrasi untuk papan dashboard per role
   let STATUS_FILTER_AKTIF = null; // null | 'Dalam Proses' | 'Selesai / Disetujui' | 'DITOLAK_PERBAIKAN' | 'Informasi (Tanpa Persetujuan)'
 
   // Kunci bulan 'yyyy-M' sebuah surat. Memakai BulanKey dari server; bila belum ada (data cache lama), turunkan dari teks d/M/yyyy.
@@ -1242,7 +1340,14 @@
     if (navItem) navItem.click();
   }
 
+  function bukaHalamanDisposisi() {
+    const navItem = document.querySelector('.nav-item[data-page="disposisi"]');
+    if (navItem) navItem.click();
+  }
+
   function labelFilterStatus(f) {
+    if (f === 'ROLE_DISETUJUI') return 'Disetujui oleh saya';
+    if (f === 'ROLE_DITOLAK') return 'Ditolak / Perlu Perbaikan oleh saya';
     if (f === 'DITOLAK_PERBAIKAN') return 'Ditolak / Perlu Perbaikan';
     return f;
   }
@@ -1253,7 +1358,10 @@
     const searchInput = document.getElementById('cariSemuaSurat');
 
     let list = DAFTAR_SURAT_CACHE;
-    if (STATUS_FILTER_AKTIF === 'DITOLAK_PERBAIKAN') {
+    if (STATUS_FILTER_AKTIF === 'ROLE_DISETUJUI' || STATUS_FILTER_AKTIF === 'ROLE_DITOLAK') {
+      const daftarNoReg = STATUS_FILTER_AKTIF === 'ROLE_DISETUJUI' ? NOREG_FILTER_DASHBOARD.disetujui : NOREG_FILTER_DASHBOARD.ditolak;
+      list = list.filter(function (s) { return daftarNoReg.indexOf(String(s.NoRegistrasi).trim()) !== -1; });
+    } else if (STATUS_FILTER_AKTIF === 'DITOLAK_PERBAIKAN') {
       list = list.filter(function (s) { return s.StatusAkhir === 'Ditolak' || s.StatusAkhir === 'Perlu Perbaikan'; });
     } else if (STATUS_FILTER_AKTIF) {
       list = list.filter(function (s) { return s.StatusAkhir === STATUS_FILTER_AKTIF; });
