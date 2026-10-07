@@ -1048,3 +1048,30 @@
   .vbar-chart-bars, .vbar-chart-labels{ gap:8px; }
   .vbar-chart-labels span{ font-size:10.5px; }
 }
+
+/* ---- Diagram donat "Distribusi Jenis Surat": lebih besar + angka di tiap irisan ---- */
+#chartBulanSurat, #chartJenisSurat{ height:auto; min-height:380px; max-height:none; overflow:visible; }
+/* Dua kartu grafik sebaris: grafik batang ikut meninggi mengikuti tinggi diagram donat (tidak ada ruang kosong) */
+.chart-grid > .card:nth-child(-n+2){ display:flex; flex-direction:column; }
+#chartBulanSurat, #chartJenisSurat{ flex:1; }
+#chartBulanSurat{ display:flex; flex-direction:column; }
+#chartBulanSurat .vbar-chart{ flex:1; height:auto; }
+.donut-chart-wrap{ gap:20px; justify-content:flex-start; }
+.donut-chart{
+  width:min(100%, 280px); height:auto; aspect-ratio:1 / 1;
+  margin:6px auto 0;
+}
+.donut-hole{ inset:20%; flex-direction:column; gap:2px; }
+.donut-total-num{ font-size:clamp(22px, 8vw, 34px); font-weight:800; color:var(--navy); line-height:1; }
+.donut-total-text{ font-size:12px; font-weight:700; color:var(--muted); letter-spacing:.5px; }
+.donut-slice-label{
+  position:absolute; transform:translate(-50%, -50%);
+  font-size:clamp(11px, 3.4vw, 14px); font-weight:800; color:#fff; line-height:1;
+  text-shadow:0 1px 3px rgba(0,0,0,.55); pointer-events:none;
+}
+.donut-legend{ font-size:12.5px; gap:8px 18px; }
+@media (max-width:560px){
+  #chartBulanSurat{ min-height:260px; }
+  #chartJenisSurat{ min-height:0; }
+  .donut-legend{ flex-direction:column; align-items:flex-start; gap:6px; margin:0 auto; }
+}
