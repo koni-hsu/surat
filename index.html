@@ -172,9 +172,10 @@
 
       <div class="warn-box" id="notifWaNoHpWarning" style="display:none;margin-bottom:14px;">Nomor WhatsApp pemohon tidak tersedia pada data surat ini, sehingga tidak bisa dikirim otomatis.</div>
 
-      <div style="display:flex;gap:10px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button type="button" class="btn btn-wa" id="btnKirimNotifWa" style="flex:1;justify-content:center;">💬 Kirim via WhatsApp</button>
-        <button type="button" class="btn btn-outline" id="btnAbaikanNotifWa" style="flex:1;justify-content:center;">Abaikan</button>
+        <button type="button" class="btn btn-primary" id="btnCetakQrNotifWa" style="flex:1;justify-content:center;display:none;">🔳 QR Code</button>
+        <button type="button" class="btn btn-outline" id="btnAbaikanNotifWa" style="flex:1 1 100%;justify-content:center;">Abaikan</button>
       </div>
     </div>
   </div>
@@ -617,7 +618,8 @@
 
   <script src="config.js"></script>
   <script src="gas-api.js?v=20261007"></script>
-  <script src="app.js?v=20261007"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="app.js?v=20261008"></script>
   <script>
     // Tracking langsung dari tautan WhatsApp: ?noreg=001%2FSM%2F2026
     (function () {
