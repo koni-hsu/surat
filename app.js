@@ -1119,7 +1119,35 @@
   // Filter Bulan & Tahun: dua dropdown biasa, sama seperti menu Laporan Bulanan.
   // Bulan sudah lengkap di HTML (Semua Bulan + Januari-Desember). Tahun: Semua Tahun, tahun berjalan s/d +2
   // (mis. 2026, 2027, 2028) ditambah tahun lain yang ada di data surat.
+  // Pastikan dua dropdown (Bulan & Tahun) benar-benar ada, apa pun versi index.html yang terpasang
+  // (mis. index.html lama berisi kotak popup / belum diganti) - dibuat langsung dari sini bila perlu.
+  function pastikanDropdownFilterSurat() {
+    let selB = document.getElementById('filterBulanSemuaSurat');
+    if (!selB) return;
+    if (selB.tagName !== 'SELECT') { // HTML lama: elemen ini berupa <div> pembungkus kotak popup
+      const wadah = selB;
+      wadah.className = ''; wadah.removeAttribute('style');
+      let opsiBulan = '<option value="">Semua Bulan</option>';
+      NAMA_BULAN_ID.forEach(function (n, i) { opsiBulan += '<option value="' + (i + 1) + '">' + n + '</option>'; });
+      wadah.id = 'wadahFilterBulanTahunSemuaSurat';
+      wadah.innerHTML = '<div style="display:flex;gap:12px;flex-wrap:wrap;">' +
+        '<div class="field"><label>Bulan</label><select id="filterBulanSemuaSurat">' + opsiBulan + '</select></div>' +
+        '<div class="field"><label>Tahun</label><select id="filterTahunSemuaSurat"><option value="">Semua Tahun</option></select></div></div>';
+      const labelLama = wadah.parentNode && wadah.parentNode.querySelector('label');
+      if (labelLama && labelLama.parentNode === wadah.parentNode) labelLama.style.display = 'none';
+      return;
+    }
+    if (!document.getElementById('filterTahunSemuaSurat')) { // hanya dropdown Bulan yang ada -> tambahkan Tahun
+      const f = document.createElement('div');
+      f.className = 'field';
+      f.innerHTML = '<label>Tahun</label><select id="filterTahunSemuaSurat"><option value="">Semua Tahun</option></select>';
+      const indukBulan = selB.parentNode;
+      indukBulan.parentNode.insertBefore(f, indukBulan.nextSibling);
+    }
+  }
+
   function isiOpsiFilterBulanSemuaSurat() {
+    pastikanDropdownFilterSurat();
     const selT = document.getElementById('filterTahunSemuaSurat');
     if (!selT) return;
     const t = new Date().getFullYear(), set = {}; let adaKosong = false;
