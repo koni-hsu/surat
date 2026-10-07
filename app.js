@@ -1472,6 +1472,64 @@
    * ============================================================ */
 
   let SURAT_SELESAI_CACHE = [];
+  let FILTER_BULAN_SURAT_SELESAI = '';
+  let FILTER_TAHUN_SURAT_SELESAI = '';
+
+  // Kunci 'yyyy-M' dari Tanggal Selesai (teks d/M/yyyy). Kosong bila surat belum punya tanggal selesai ('-').
+  function bulanKeySelesai(s) {
+    const m = /^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s.TanggalSelesai || '');
+    return m ? (m[3] + '-' + Number(m[2])) : '';
+  }
+
+  // Pilihan Tahun: tahun berjalan s/d +2, ditambah tahun lain yang ada di data (sama seperti Daftar Surat Masuk)
+  function isiOpsiTahunSuratSelesai() {
+    const selT = document.getElementById('filterTahunSuratSelesai');
+    if (!selT) return;
+    const t = new Date().getFullYear(), set = {}; let adaKosong = false;
+    for (let i = t; i <= t + 2; i++) set[i] = true;
+    SURAT_SELESAI_CACHE.forEach(function (s) {
+      const k = bulanKeySelesai(s);
+      if (k) set[k.split('-')[0]] = true; else adaKosong = true;
+    });
+    let html = '<option value="">Semua Tahun</option>';
+    Object.keys(set).sort().forEach(function (th) { html += '<option value="' + th + '">' + th + '</option>'; });
+    if (adaKosong) html += '<option value="kosong">(Tanggal tidak terbaca)</option>';
+    selT.innerHTML = html;
+    const ada = FILTER_TAHUN_SURAT_SELESAI && Array.prototype.some.call(selT.options, function (o) { return o.value === FILTER_TAHUN_SURAT_SELESAI; });
+    if (!ada) FILTER_TAHUN_SURAT_SELESAI = '';
+    selT.value = FILTER_TAHUN_SURAT_SELESAI;
+    const selB = document.getElementById('filterBulanSuratSelesai');
+    if (selB) selB.value = FILTER_BULAN_SURAT_SELESAI;
+  }
+
+  // Gabungan filter Bulan + Tahun (berdasarkan Tanggal Selesai) + Cari Cepat
+  function terapkanFilterSuratSelesai() {
+    const counter = document.getElementById('jumlahSuratSelesai');
+    const cari = document.getElementById('cariSuratSelesai');
+    let list = SURAT_SELESAI_CACHE;
+
+    if (FILTER_TAHUN_SURAT_SELESAI === 'kosong') {
+      list = list.filter(function (s) { return !bulanKeySelesai(s); });
+    } else {
+      if (FILTER_TAHUN_SURAT_SELESAI) {
+        list = list.filter(function (s) { return bulanKeySelesai(s).split('-')[0] === FILTER_TAHUN_SURAT_SELESAI; });
+      }
+      if (FILTER_BULAN_SURAT_SELESAI) {
+        list = list.filter(function (s) { return bulanKeySelesai(s).split('-')[1] === FILTER_BULAN_SURAT_SELESAI; });
+      }
+    }
+
+    const kw = cari ? cari.value.trim().toLowerCase() : '';
+    if (kw) {
+      list = list.filter(function (s) {
+        return (s.NoRegistrasi + ' ' + s.Perihal + ' ' + s.NamaPenerima + ' ' + s.JenisSurat).toLowerCase().indexOf(kw) !== -1;
+      });
+    }
+
+    const terfilter = !!(kw || FILTER_BULAN_SURAT_SELESAI || FILTER_TAHUN_SURAT_SELESAI);
+    if (counter) counter.textContent = 'Total: ' + list.length + ' surat' + (terfilter ? ' (terfilter)' : '');
+    renderTabelSuratSelesai(list, terfilter);
+  }
 
   function loadSuratSelesai() {
     const tbody = document.querySelector('#tabelSuratSelesai tbody');
@@ -1483,8 +1541,8 @@
       .withSuccessHandler(function (list) {
         try {
           SURAT_SELESAI_CACHE = list || [];
-          if (counter) counter.textContent = 'Total: ' + SURAT_SELESAI_CACHE.length + ' surat';
-          renderTabelSuratSelesai(SURAT_SELESAI_CACHE);
+          isiOpsiTahunSuratSelesai();
+          terapkanFilterSuratSelesai();
         } catch (clientErr) {
           console.error('Error render Surat Selesai:', clientErr);
           tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Terjadi kesalahan saat menampilkan data: ' + clientErr.message + '</td></tr>';
@@ -1497,10 +1555,10 @@
       .getSuratSelesai(CURRENT_USER.token);
   }
 
-  function renderTabelSuratSelesai(list) {
+  function renderTabelSuratSelesai(list, terfilter) {
     const tbody = document.querySelector('#tabelSuratSelesai tbody');
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Belum ada surat yang selesai.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">' + (terfilter ? 'Tidak ada surat selesai yang cocok dengan filter.' : 'Belum ada surat yang selesai.') + '</td></tr>';
       return;
     }
     const isAdmin = CURRENT_USER && CURRENT_USER.role === 'Admin TU';
@@ -1555,14 +1613,21 @@
   }
 
   document.addEventListener('input', function (e) {
-    if (e.target && e.target.id === 'cariSuratSelesai') {
-      const kw = e.target.value.trim().toLowerCase();
-      if (!kw) { renderTabelSuratSelesai(SURAT_SELESAI_CACHE); return; }
-      const filtered = SURAT_SELESAI_CACHE.filter(function (s) {
-        return (s.NoRegistrasi + ' ' + s.Perihal + ' ' + s.NamaPenerima + ' ' + s.JenisSurat)
-          .toLowerCase().indexOf(kw) !== -1;
-      });
-      renderTabelSuratSelesai(filtered);
+    if (e.target && e.target.id === 'cariSuratSelesai') terapkanFilterSuratSelesai();
+  });
+
+  document.addEventListener('change', function (e) {
+    if (!e.target) return;
+    if (e.target.id === 'filterBulanSuratSelesai') {
+      FILTER_BULAN_SURAT_SELESAI = e.target.value || '';
+      terapkanFilterSuratSelesai();
+    } else if (e.target.id === 'filterTahunSuratSelesai') {
+      FILTER_TAHUN_SURAT_SELESAI = e.target.value || '';
+      if (FILTER_TAHUN_SURAT_SELESAI === 'kosong') { // bulan tidak berlaku untuk tanggal tak terbaca
+        FILTER_BULAN_SURAT_SELESAI = '';
+        const sb = document.getElementById('filterBulanSuratSelesai'); if (sb) sb.value = '';
+      }
+      terapkanFilterSuratSelesai();
     }
   });
 
