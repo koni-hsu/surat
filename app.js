@@ -161,6 +161,7 @@
   function prefetchDaftarSurat() {
     try {
       google.script.run
+        .withSilentErrors()
         .withSuccessHandler(function (list) { DAFTAR_SURAT_CACHE = list || []; })
         .withFailureHandler(function () { /* diamkan - dimuat ulang saat menu dibuka */ })
         .getAllSurat(CURRENT_USER.token);
@@ -201,7 +202,16 @@
       }
       html += '<div class="nav-group-items" data-group-items="' + g + '"' + (adaGrup && !grupAktif ? ' style="display:none;"' : '') + '>';
       groupItems[g].forEach(function (t, ti) {
-        html += '<div class="nav-item' + (gi === 0 && ti === 0 ? ' active' : '') + '" data-page="' + t.p + '">' + t.label + '</div>';
+        const aktif = (gi === 0 && ti === 0 ? ' active' : '');
+        if (t.p === 'laporan') { // dropdown: Harian / Bulanan
+          html += '<div class="nav-item has-sub' + aktif + '" data-page="laporan">' + t.label + '<span class="nav-caret">▾</span></div>' +
+            '<div class="nav-sub" id="navSubLaporan">' +
+              '<div class="nav-subitem" data-sublaporan="harian">📅 Harian</div>' +
+              '<div class="nav-subitem" data-sublaporan="bulanan">🗓️ Bulanan</div>' +
+            '</div>';
+        } else {
+          html += '<div class="nav-item' + aktif + '" data-page="' + t.p + '">' + t.label + '</div>';
+        }
       });
       html += '</div>';
     });
@@ -222,10 +232,34 @@
       });
     });
 
+    // Sub-menu Laporan (Harian / Bulanan)
+    nav.querySelectorAll('.nav-subitem').forEach(function (subEl) {
+      subEl.addEventListener('click', function () {
+        const induk = nav.querySelector('.nav-item[data-page="laporan"]');
+        nav.querySelectorAll('.nav-item').forEach(function (t) { t.classList.remove('active'); });
+        if (induk) { induk.classList.add('active'); induk.classList.add('terbuka'); }
+        document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
+        document.getElementById('page-laporan').classList.add('active');
+        tampilkanSubLaporan(subEl.dataset.sublaporan);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        tutupSidebarMobile();
+      });
+    });
+
     nav.querySelectorAll('.nav-item').forEach(function (tabEl) {
       tabEl.addEventListener('click', function () {
+        const sudahAktif = tabEl.classList.contains('active');
         nav.querySelectorAll('.nav-item').forEach(function (t) { t.classList.remove('active'); });
         tabEl.classList.add('active');
+
+        // Dropdown Laporan: klik pertama membuka (dan menampilkan sub-menu terakhir/Harian);
+        // klik lagi saat sudah aktif -> lipat/buka daftar sub-menu.
+        if (tabEl.classList.contains('has-sub')) {
+          const subBox = tabEl.nextElementSibling;
+          const buka = sudahAktif ? !subBox.classList.contains('buka') : true;
+          subBox.classList.toggle('buka', buka);
+          tabEl.classList.toggle('terbuka', buka);
+        }
 
         // Kalau menu yang diklik ada di grup yang sedang disembunyikan (mis. navigasi programatis
         // dari kartu dashboard), otomatis pindahkan grup yang terlihat supaya tetap konsisten.
@@ -239,13 +273,13 @@
         document.querySelectorAll('.page').forEach(function (p) { p.classList.remove('active'); });
         document.getElementById('page-' + tabEl.dataset.page).classList.add('active');
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        tutupSidebarMobile(); // di layar sempit, sidebar otomatis tertutup setelah memilih menu
+        if (!tabEl.classList.contains('has-sub')) tutupSidebarMobile(); // dropdown tetap terbuka agar sub-menu bisa dipilih
 
         if (tabEl.dataset.page === 'dashboard') loadDashboard();
         if (tabEl.dataset.page === 'disposisi') loadKotakMasukSaya();
         if (tabEl.dataset.page === 'semuasurat') loadDaftarSuratMasuk();
         if (tabEl.dataset.page === 'suratselesai') loadSuratSelesai();
-        if (tabEl.dataset.page === 'laporan') { loadLaporanHarian(); loadLaporanBulanan(); }
+        if (tabEl.dataset.page === 'laporan') tampilkanSubLaporan(SUB_LAPORAN_AKTIF);
       });
     });
   }
@@ -1547,6 +1581,26 @@
   /* ============================================================
    *  LAPORAN HARIAN
    * ============================================================ */
+
+  // Laporan: hanya satu kartu (Harian ATAU Bulanan) yang tampil; data dimuat untuk yang dipilih saja.
+  let SUB_LAPORAN_AKTIF = 'harian';
+  function tampilkanSubLaporan(sub) {
+    SUB_LAPORAN_AKTIF = (sub === 'bulanan') ? 'bulanan' : 'harian';
+    const harian = document.getElementById('cardLaporanHarian');
+    const bulanan = document.getElementById('cardLaporanBulanan');
+    if (harian) harian.classList.toggle('laporan-sembunyi', SUB_LAPORAN_AKTIF !== 'harian');
+    if (bulanan) bulanan.classList.toggle('laporan-sembunyi', SUB_LAPORAN_AKTIF !== 'bulanan');
+    const subBox = document.getElementById('navSubLaporan');
+    if (subBox) {
+      subBox.classList.add('buka');
+      subBox.querySelectorAll('.nav-subitem').forEach(function (el) {
+        el.classList.toggle('active', el.dataset.sublaporan === SUB_LAPORAN_AKTIF);
+      });
+      const induk = subBox.previousElementSibling;
+      if (induk) induk.classList.add('terbuka');
+    }
+    if (SUB_LAPORAN_AKTIF === 'harian') loadLaporanHarian(); else loadLaporanBulanan();
+  }
 
   function loadLaporanHarian() {
     const statsBox = document.getElementById('statsHarian');
