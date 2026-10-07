@@ -997,3 +997,54 @@
     .disposisi-modal-header{ padding:14px 16px; }
     .disposisi-body{ padding:14px 12px 22px; max-height:none; }
   }
+
+/* ============================================================
+ *  DASHBOARD RESPONSIF & RAPI (semua akun)
+ *  - Admin TU : 6 kotak -> 3 kolom x 2 baris (HP: 2 kolom x 3 baris), tanpa ruang kosong
+ *  - Role lain: 4 kotak -> 4 kolom (tablet/HP: 2 x 2)
+ *  - Grafik   : 2 grafik sebaris + 1 grafik selebar penuh (HP: ditumpuk 1 kolom)
+ *  Blok ini sengaja di paling bawah agar menimpa aturan dashboard sebelumnya.
+ * ============================================================ */
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:14px;
+  align-items:stretch;
+  margin-bottom:20px;
+}
+.stats-grid.stats-grid-role{ grid-template-columns:repeat(4, minmax(0, 1fr)); }
+.stats-grid .stat-box{
+  flex:none; min-width:0;
+  display:flex; flex-direction:column; justify-content:flex-start;
+}
+.stats-grid .stat-box .label{ overflow-wrap:anywhere; line-height:1.35; }
+/* Kotak persentase = kotak biasa (tidak lagi direntangkan oleh skrip) */
+.stats-grid .progress-stat-box{ grid-column:auto !important; }
+.stats-grid .progress-stat-box .tahap-meta{ font-size:12px; line-height:1.35; }
+
+.chart-grid{
+  display:grid;
+  grid-template-columns:repeat(6, minmax(0, 1fr));
+  gap:18px;
+  align-items:stretch;
+}
+.chart-grid > .card{ grid-column:span 3; min-width:0; margin-bottom:0; }
+.chart-grid > .card:nth-child(3){ grid-column:span 6; }
+
+@media (max-width:1100px){
+  .stats-grid.stats-grid-role{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width:860px){
+  .chart-grid{ grid-template-columns:minmax(0, 1fr); gap:14px; }
+  .chart-grid > .card,
+  .chart-grid > .card:nth-child(3){ grid-column:auto; }
+}
+@media (max-width:560px){
+  .stats-grid,
+  .stats-grid.stats-grid-role{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+  .stats-grid .stat-box{ padding:14px 14px 14px 16px; }
+  .stats-grid .stat-box .num{ font-size:24px; }
+  .stats-grid .stat-box .label{ font-size:12px; }
+  .vbar-chart-bars, .vbar-chart-labels{ gap:8px; }
+  .vbar-chart-labels span{ font-size:10.5px; }
+}
