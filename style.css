@@ -89,6 +89,22 @@
   .nav-group-label.active-group::after{ transform:rotate(90deg); }
   .nav-group-items{ display:flex; flex-direction:column; gap:3px; }
 
+  /* Menu dropdown (mis. Laporan -> Harian / Bulanan) */
+  .nav-item.has-sub{ justify-content:space-between; }
+  .nav-item .nav-caret{ font-size:11px; transition:transform .18s; opacity:.8; }
+  .nav-item.has-sub.terbuka .nav-caret{ transform:rotate(180deg); }
+  .nav-sub{ display:none; flex-direction:column; gap:2px; margin:0 0 2px 22px; padding-left:10px; border-left:1px solid rgba(255,255,255,.14); }
+  .nav-sub.buka{ display:flex; }
+  .nav-subitem{
+    padding:8px 12px; border-radius:8px; font-size:13px; font-weight:600;
+    color:#a9c3dc; cursor:pointer; white-space:nowrap; transition:.15s;
+  }
+  .nav-subitem:hover{ background:rgba(255,255,255,.07); color:#fff; }
+  .nav-subitem.active{ background:rgba(223,180,95,.18); color:var(--gold-light); }
+
+  /* Halaman Laporan: satu kartu saja yang terlihat */
+  #page-laporan .card.laporan-sembunyi{ display:none; }
+
   .sidebar-footer{
     padding:16px 16px 20px; flex-shrink:0;
     border-top:1px solid rgba(255,255,255,.1);
@@ -877,11 +893,39 @@
   /* ============ POP UP TRACKING DARI DAFTAR SURAT ============ */
   #tabelSemuaSurat tbody tr[data-noreg]{ cursor:pointer; }
   #tabelSemuaSurat tbody tr[data-noreg]:hover td{ background:#e3eefb; }
+  #trackingPopupOverlay{ padding:14px; }
   #trackingPopupOverlay .login-modal{
-    max-width:680px; max-height:90vh; overflow-y:auto; padding:22px 22px 26px;
+    max-width:460px; max-height:84vh; overflow-y:auto; padding:14px 16px 16px; border-radius:14px;
+    overscroll-behavior:contain;
   }
-  #trackingPopupBody .empty-state{ padding:30px 10px; text-align:center; color:var(--muted); }
+  #trackingPopupOverlay .login-modal-header h2{ font-size:15px; }
+  #trackingPopupBody{ margin-top:10px !important; }
+  #trackingPopupBody .empty-state{ padding:22px 10px; text-align:center; color:var(--muted); font-size:13px; }
   #trackingPopupBody > *:first-child{ margin-top:0; }
+  /* Kartu-kartu di dalam pop up dipadatkan agar serasi dengan ukuran pop up */
+  #trackingPopupBody .no-reg-result{ padding:11px 14px; margin-bottom:10px; border-radius:10px; box-shadow:none; }
+  #trackingPopupBody .no-reg-result .no{ font-size:16px; }
+  #trackingPopupBody .no-reg-result .perihal{ font-size:12.5px; line-height:1.4; margin-top:3px; }
+  #trackingPopupBody .no-reg-result .field-row{
+    display:grid; grid-template-columns:1fr 1fr; gap:3px 14px; margin-top:8px; padding-top:8px; font-size:12px; line-height:1.4;
+  }
+  #trackingPopupBody .no-reg-result .field-row .item:nth-child(2){ grid-column:1 / -1; } /* "Dari" biasanya panjang */
+  #trackingPopupBody .card{ padding:11px 14px; margin-bottom:10px; border-radius:10px; box-shadow:none; }
+  #trackingPopupBody .card h2{ font-size:13.5px; margin-bottom:6px; }
+  #trackingPopupBody .card p{ margin:4px 0; }
+  #trackingPopupBody .timeline li{ padding:0 0 12px 28px; margin-left:7px; }
+  #trackingPopupBody .timeline .dot{ width:14px; height:14px; left:-8px; border-width:2px; }
+  #trackingPopupBody .timeline .tahap-title{ font-size:13px; }
+  #trackingPopupBody .timeline .tahap-meta{ font-size:11.5px; margin-top:2px; }
+  #trackingPopupBody .timeline .tahap-catatan{ font-size:12px; margin-top:4px; padding:5px 9px; }
+  #trackingPopupBody .info-box, #trackingPopupBody .success-box, #trackingPopupBody .warn-box{ padding:9px 12px; font-size:12.5px; }
+  #trackingPopupBody .desc{ font-size:12px; margin-bottom:10px; }
+  #trackingPopupBody .btn{ padding:8px 14px; min-height:0; font-size:13px; }
+  #trackingPopupBody input[type=text]{ padding:8px 10px; font-size:13px; }
+  @media (max-width:640px){
+    #trackingPopupOverlay .login-modal{ padding:12px 12px 14px; max-height:88vh; }
+    #trackingPopupBody .no-reg-result .field-row{ grid-template-columns:1fr; }
+  }
 
 
   /* ============ RAPIKAN DAFTAR SURAT MASUK (baris seragam, scroll halus) ============ */
