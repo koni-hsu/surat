@@ -9,6 +9,7 @@
   const MENU_STANDAR = [
     {p:'dashboard', label:'📊 Dashboard'},
     {p:'registrasi', label:'📝 Registrasi Surat'},
+    {p:'tracking', label:'🔎 Tracking Surat'},
     {p:'disposisi', label:'✅ Menunggu Persetujuan'},
     {p:'semuasurat', label:'📋 Daftar Surat Masuk'},
     {p:'suratselesai', label:'✔️ Surat Selesai'},
