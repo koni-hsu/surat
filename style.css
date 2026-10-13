@@ -1078,3 +1078,41 @@
 
   /* Ikon SVG pada tombol (WhatsApp, QR Code) */
   .btn .ikon-btn{ width:18px; height:18px; flex:0 0 18px; }
+
+
+/* ============================================================
+ *  POP UP PROSES PERSETUJUAN - dipadatkan agar selaras dengan pop up Tracking (Daftar Surat Masuk)
+ *  Blok ini di paling bawah agar menimpa aturan sebelumnya. Tanpa blur/animasi berat -> muncul lebih cepat.
+ * ============================================================ */
+#disposisiPopupOverlay{
+  align-items:center; padding:14px; overflow-y:auto;
+  background:rgba(6,37,68,.55);
+  -webkit-backdrop-filter:none; backdrop-filter:none;
+}
+#disposisiPopupOverlay .disposisi-modal{
+  max-width:500px; border-radius:14px; box-shadow:var(--shadow-lg);
+  animation:fadeIn .12s ease;
+}
+#disposisiPopupOverlay .disposisi-modal-header{ padding:11px 16px; border-bottom-width:2px; }
+#disposisiPopupOverlay .disposisi-modal-header h2{ font-size:15px; }
+#disposisiPopupOverlay .disposisi-modal-header .sub{ margin-top:2px; font-size:12px; }
+#disposisiPopupOverlay .disposisi-modal-header .modal-close{ font-size:24px; }
+#disposisiPopupOverlay .disposisi-body{ padding:12px 14px 14px; max-height:calc(86vh - 56px); overscroll-behavior:contain; }
+#disposisiPopupOverlay .disposisi-body .empty-state{ padding:18px 10px; text-align:center; color:var(--muted); font-size:13px; }
+#disposisiPopupOverlay .no-reg-result{ padding:11px 14px; margin-bottom:10px; border-radius:10px; box-shadow:none; }
+#disposisiPopupOverlay .no-reg-result .no{ font-size:16px; }
+#disposisiPopupOverlay .no-reg-result .perihal{ font-size:12.5px; line-height:1.4; margin-top:3px; }
+#disposisiPopupOverlay .disposisi-body .card{ padding:11px 14px; margin-bottom:10px; border-radius:10px; }
+#disposisiPopupOverlay .disposisi-body .card h2{ font-size:13.5px; margin-bottom:6px; }
+#disposisiPopupOverlay .disposisi-body .desc{ font-size:12px; margin-bottom:10px; line-height:1.45; }
+#disposisiPopupOverlay .disposisi-body textarea{ min-height:56px; padding:8px 10px; font-size:13px; }
+#disposisiPopupOverlay .disposisi-body .btn{ padding:8px 14px; min-height:0; font-size:13px; }
+#disposisiPopupOverlay .disposisi-body .pill{ font-size:11.5px; }
+#disposisiPopupOverlay .disposisi-body .info-box,
+#disposisiPopupOverlay .disposisi-body .warn-box{ padding:9px 12px; font-size:12.5px; }
+@media (max-width:600px){
+  #disposisiPopupOverlay{ padding:10px; }
+  #disposisiPopupOverlay .disposisi-modal{ border-radius:14px; min-height:0; }
+  #disposisiPopupOverlay .disposisi-modal-header{ padding:10px 14px; }
+  #disposisiPopupOverlay .disposisi-body{ padding:10px 10px 12px; max-height:calc(88vh - 54px); }
+}
