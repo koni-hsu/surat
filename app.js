@@ -1098,10 +1098,17 @@
     } catch (e) { selesai(null, ''); }
   }
 
-  function tampilkanKonfirmasiNotifWa(waInfo, noRegistrasi) {
+  function tampilkanKonfirmasiNotifWa(waInfo, noRegistrasi, dariDaftar) {
     const overlay = document.getElementById('notifWaModalOverlay');
     const btnKirim = document.getElementById('btnKirimNotifWa');
     const warning = document.getElementById('notifWaNoHpWarning');
+
+    const dAwal = document.getElementById('notifWaDescAwal');
+    const dAkhir = document.getElementById('notifWaDescAkhir');
+    if (dAwal && dAkhir) {
+      dAwal.textContent = dariDaftar ? 'Kirim informasi status surat ' : 'Tindakan pada surat ';
+      dAkhir.textContent = dariDaftar ? ' ke pemohon melalui WhatsApp?' : ' berhasil disimpan. Kirim informasi ini ke pemohon surat melalui WhatsApp?';
+    }
 
     document.getElementById('notifWaNoRegistrasi').textContent = noRegistrasi;
     document.getElementById('notifWaPreview').textContent = waInfo.pesan;
@@ -1529,9 +1536,10 @@
     tbody.innerHTML = list.map(function (s) {
       const noRegEsc = s.NoRegistrasi.replace(/'/g, "\\'");
       const aksi = bisaKelola
-        ? '<div style="display:flex;gap:6px;">' +
+        ? '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
             '<button class="btn btn-outline btn-sm" onclick="bukaEditSurat(\'' + noRegEsc + '\')">✏️ Edit</button>' +
             '<button class="btn btn-reject btn-sm" onclick="hapusSuratMasuk(\'' + noRegEsc + '\')">🗑️ Hapus</button>' +
+            '<button class="btn btn-wa btn-sm" onclick="kirimWaDariDaftar(\'' + noRegEsc + '\', this)">' + IKON_WA_SVG + 'Kirim WhatsApp</button>' +
           '</div>'
         : '<span class="tahap-meta">-</span>';
       return '<tr>' +
@@ -1781,6 +1789,24 @@
         })
         .updateSuratMasuk(CURRENT_USER.token, payload);
     });
+  }
+
+  const IKON_WA_SVG = '<svg class="ikon-btn" viewBox="0 0 24 24" aria-hidden="true" style="width:15px;height:15px;flex-basis:15px;"><path fill="currentColor" d="M17.5 14.4c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.23 1.36.2 1.88.12.57-.09 1.75-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35zM12.05 21.8h-.01a9.9 9.9 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.89 9.88zM20.52 3.45A11.8 11.8 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.68 1.45h.01c6.55 0 11.89-5.34 11.89-11.89 0-3.18-1.24-6.17-3.48-8.42z"/></svg>';
+
+  // Tombol "Kirim WhatsApp" pada Daftar Surat Masuk: ambil info surat dari server, lalu tampilkan
+  // modal yang sama dengan setelah registrasi (pesan + foto QR Code + tombol kirim).
+  function kirimWaDariDaftar(noRegistrasi, btn) {
+    if (btn) btn.disabled = true;
+    google.script.run
+      .withSuccessHandler(function (waInfo) {
+        if (btn) btn.disabled = false;
+        tampilkanKonfirmasiNotifWa(waInfo, noRegistrasi, true);
+      })
+      .withFailureHandler(function (err) {
+        if (btn) btn.disabled = false;
+        showToast('Gagal menyiapkan pesan WhatsApp: ' + err.message, 'error');
+      })
+      .getInfoKirimWa(CURRENT_USER.token, noRegistrasi);
   }
 
   function bukaEditSurat(noRegistrasi) {
