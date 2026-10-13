@@ -743,7 +743,7 @@
         }
         if (counter) counter.textContent = '(' + list.length + ')';
         box.innerHTML = list.map(function (s) {
-          return '<div class="kotak-masuk-row" onclick="bukaDariKotakMasuk(\'' + s.NoRegistrasi + '\')">' +
+          return '<div class="kotak-masuk-row" data-noreg="' + s.NoRegistrasi + '" onclick="bukaDariKotakMasuk(\'' + s.NoRegistrasi + '\', this)">' +
             '  <div class="kotak-masuk-main">' +
             '    <span class="kotak-masuk-noreg">' + s.NoRegistrasi + '</span>' +
             '    <span class="kotak-masuk-perihal">' + s.Perihal + '</span>' +
@@ -754,6 +754,8 @@
             '  </div>' +
             '</div>';
         }).join('');
+        // Muat lebih awal alur 3 surat teratas (yang paling mungkin dibuka) agar pop up langsung terisi.
+        list.slice(0, 3).forEach(function (s, i) { setTimeout(function () { prefetchDisposisi(s.NoRegistrasi); }, 400 + i * 500); });
       })
       .withFailureHandler(function (err) {
         box.innerHTML = '<div class="empty-state">Terjadi kesalahan: ' + err.message + '</div>';
@@ -761,11 +763,45 @@
       .getSuratMenungguPersetujuan(CURRENT_USER.token);
   }
 
-  function bukaDariKotakMasuk(noReg) {
+  // Pop up langsung tampil: kepala surat diambil dari baris yang diklik (tanpa menunggu server),
+  // alur persetujuan menyusul begitu data tiba (atau seketika bila sudah dimuat lebih awal).
+  function bukaDariKotakMasuk(noReg, rowEl) {
     document.getElementById('inputNoRegDisposisi').value = noReg;
-    cariDisposisi();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    let kepala = '';
+    if (rowEl && rowEl.querySelector) {
+      const tx = function (sel) { const n = rowEl.querySelector(sel); return n ? n.textContent.trim() : ''; };
+      kepala = '<div class="no-reg-result">' +
+        '<div class="no">' + escHtmlQr(noReg) + '</div>' +
+        '<div class="perihal">' + escHtmlQr(tx('.kotak-masuk-perihal')) + '</div>' +
+        '<div class="perihal" style="opacity:.8;font-size:12px;">Menunggu: ' + escHtmlQr(tx('.kotak-masuk-side .pill')) + ' &middot; Masuk ' + escHtmlQr(tx('.kotak-masuk-tanggal')) + '</div>' +
+        '</div>';
+    }
+    cariDisposisi(kepala);
   }
+
+  // Muat data alur lebih awal begitu kursor berhenti / jari menyentuh baris (hasil masuk cache).
+  const SUDAH_PREFETCH_DISP = {};
+  function prefetchDisposisi(noReg) {
+    if (!noReg || SUDAH_PREFETCH_DISP[noReg]) return;
+    SUDAH_PREFETCH_DISP[noReg] = true;
+    setTimeout(function () { delete SUDAH_PREFETCH_DISP[noReg]; }, 60000);
+    try {
+      google.script.run.withSilentErrors()
+        .withSuccessHandler(function () {}).withFailureHandler(function () {})
+        .getTrackingByNoRegistrasi(noReg);
+    } catch (e) { /* abaikan */ }
+  }
+  (function () {
+    let tunda = null;
+    const barisDari = function (e) { return e.target.closest ? e.target.closest('.kotak-masuk-row') : null; };
+    document.addEventListener('mouseover', function (e) {
+      const r = barisDari(e); clearTimeout(tunda);
+      if (r) tunda = setTimeout(function () { prefetchDisposisi(r.getAttribute('data-noreg')); }, 100);
+    });
+    document.addEventListener('touchstart', function (e) {
+      const r = barisDari(e); if (r) prefetchDisposisi(r.getAttribute('data-noreg'));
+    }, { passive: true });
+  })();
 
   document.addEventListener('click', function (e) {
     if (e.target && e.target.id === 'btnCariDisposisi') cariDisposisi();
@@ -774,11 +810,13 @@
     if (e.target && e.target.id === 'inputNoRegDisposisi' && e.key === 'Enter') cariDisposisi();
   });
 
-  function cariDisposisi() {
+  function cariDisposisi(kepalaInstan) {
     const noReg = document.getElementById('inputNoRegDisposisi').value.trim();
     const box = document.getElementById('hasilDisposisi');
     if (!noReg) { showToast('Masukkan No Registrasi terlebih dahulu', 'error'); return; }
-    box.innerHTML = '<div class="empty-state">Mencari data...</div>';
+    box.innerHTML = (typeof kepalaInstan === 'string' && kepalaInstan)
+      ? kepalaInstan + '<div class="empty-state">Memuat alur persetujuan...</div>'
+      : '<div class="empty-state">Mencari data...</div>';
 
     google.script.run
       .withSuccessHandler(function (res) {
