@@ -518,6 +518,14 @@
               <select id="filterTahunSuratSelesai"><option value="">Semua Tahun</option></select>
             </div>
             <div class="field">
+              <label>Pengambilan</label>
+              <select id="filterPengambilanSuratSelesai">
+                <option value="">Semua</option>
+                <option value="belum">Belum Diambil</option>
+                <option value="sudah">Sudah Diambil</option>
+              </select>
+            </div>
+            <div class="field">
               <label>&nbsp;</label>
               <button class="btn btn-outline" id="btnRefreshSuratSelesai">🔄 Muat Ulang</button>
             </div>
@@ -646,7 +654,7 @@
   <script src="config.js"></script>
   <script src="gas-api.js?v=20261007"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="app.js?v=20261016"></script>
+  <script src="app.js?v=20261017"></script>
   <script>
     // Tracking langsung dari tautan WhatsApp: ?noreg=001%2FSM%2F2026
     (function () {
