@@ -1164,8 +1164,13 @@
     const dAwal = document.getElementById('notifWaDescAwal');
     const dAkhir = document.getElementById('notifWaDescAkhir');
     if (dAwal && dAkhir) {
-      dAwal.textContent = dariDaftar ? 'Kirim informasi status surat ' : 'Tindakan pada surat ';
-      dAkhir.textContent = dariDaftar ? ' ke pemohon melalui WhatsApp?' : ' berhasil disimpan. Kirim informasi ini ke pemohon surat melalui WhatsApp?';
+      if (dariDaftar === 'ambil') {
+        dAwal.textContent = 'Kirim pengingat pengambilan surat ';
+        dAkhir.textContent = ' ke pemohon melalui WhatsApp?';
+      } else {
+        dAwal.textContent = dariDaftar ? 'Kirim informasi status surat ' : 'Tindakan pada surat ';
+        dAkhir.textContent = dariDaftar ? ' ke pemohon melalui WhatsApp?' : ' berhasil disimpan. Kirim informasi ini ke pemohon surat melalui WhatsApp?';
+      }
     }
 
     document.getElementById('notifWaNoRegistrasi').textContent = noRegistrasi;
@@ -1625,6 +1630,7 @@
   let SURAT_SELESAI_CACHE = [];
   let FILTER_BULAN_SURAT_SELESAI = '';
   let FILTER_TAHUN_SURAT_SELESAI = '';
+  let FILTER_PENGAMBILAN_SURAT_SELESAI = ''; // '' = semua | 'belum' | 'sudah'
 
   // Kunci 'yyyy-M' dari Tanggal Selesai (teks d/M/yyyy). Kosong bila surat belum punya tanggal selesai ('-').
   function bulanKeySelesai(s) {
@@ -1670,6 +1676,9 @@
       }
     }
 
+    if (FILTER_PENGAMBILAN_SURAT_SELESAI === 'belum') list = list.filter(function (s) { return !s.SudahDiambil; });
+    else if (FILTER_PENGAMBILAN_SURAT_SELESAI === 'sudah') list = list.filter(function (s) { return !!s.SudahDiambil; });
+
     const kw = cari ? cari.value.trim().toLowerCase() : '';
     if (kw) {
       list = list.filter(function (s) {
@@ -1677,7 +1686,7 @@
       });
     }
 
-    const terfilter = !!(kw || FILTER_BULAN_SURAT_SELESAI || FILTER_TAHUN_SURAT_SELESAI);
+    const terfilter = !!(kw || FILTER_BULAN_SURAT_SELESAI || FILTER_TAHUN_SURAT_SELESAI || FILTER_PENGAMBILAN_SURAT_SELESAI);
     if (counter) counter.textContent = 'Total: ' + list.length + ' surat' + (terfilter ? ' (terfilter)' : '');
     renderTabelSuratSelesai(list, terfilter);
   }
@@ -1724,6 +1733,7 @@
         const tombol = [];
         if (!s.SudahDiambil) {
           tombol.push('<button class="btn btn-primary btn-sm" onclick="bukaKonfirmasiDiambilAdmin(\'' + noRegEsc + '\')">📦 Sudah Diambil</button>');
+          tombol.push('<button class="btn btn-wa btn-sm" onclick="kirimWaDariDaftar(\'' + noRegEsc + '\', this, \'ambil\')">' + IKON_WA_SVG + 'Kirim WhatsApp</button>');
         }
         aksi = tombol.length ? '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + tombol.join('') + '</div>' : '<span class="tahap-meta">-</span>';
       } else {
@@ -1771,6 +1781,9 @@
     if (!e.target) return;
     if (e.target.id === 'filterBulanSuratSelesai') {
       FILTER_BULAN_SURAT_SELESAI = e.target.value || '';
+      terapkanFilterSuratSelesai();
+    } else if (e.target.id === 'filterPengambilanSuratSelesai') {
+      FILTER_PENGAMBILAN_SURAT_SELESAI = e.target.value || '';
       terapkanFilterSuratSelesai();
     } else if (e.target.id === 'filterTahunSuratSelesai') {
       FILTER_TAHUN_SURAT_SELESAI = e.target.value || '';
@@ -1854,18 +1867,19 @@
 
   // Tombol "Kirim WhatsApp" pada Daftar Surat Masuk: ambil info surat dari server, lalu tampilkan
   // modal yang sama dengan setelah registrasi (pesan + foto QR Code + tombol kirim).
-  function kirimWaDariDaftar(noRegistrasi, btn) {
+  // mode: undefined = info status biasa | 'ambil' = pengingat pengambilan surat (Surat Selesai)
+  function kirimWaDariDaftar(noRegistrasi, btn, mode) {
     if (btn) btn.disabled = true;
     google.script.run
       .withSuccessHandler(function (waInfo) {
         if (btn) btn.disabled = false;
-        tampilkanKonfirmasiNotifWa(waInfo, noRegistrasi, true);
+        tampilkanKonfirmasiNotifWa(waInfo, noRegistrasi, mode === 'ambil' ? 'ambil' : true);
       })
       .withFailureHandler(function (err) {
         if (btn) btn.disabled = false;
         showToast('Gagal menyiapkan pesan WhatsApp: ' + err.message, 'error');
       })
-      .getInfoKirimWa(CURRENT_USER.token, noRegistrasi);
+      .getInfoKirimWa(CURRENT_USER.token, noRegistrasi, mode || '');
   }
 
   function bukaEditSurat(noRegistrasi) {
