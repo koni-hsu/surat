@@ -1075,3 +1075,6 @@
   #chartJenisSurat{ min-height:0; }
   .donut-legend{ flex-direction:column; align-items:flex-start; gap:6px; margin:0 auto; }
 }
+
+  /* Ikon SVG pada tombol (WhatsApp, QR Code) */
+  .btn .ikon-btn{ width:18px; height:18px; flex:0 0 18px; }
