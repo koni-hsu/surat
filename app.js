@@ -947,7 +947,45 @@
 
     btnKirim.addEventListener('click', function () {
       const link = btnKirim.dataset.walink;
+      const blob = QR_WA_BLOB; // sudah disiapkan saat modal dibuka (agar klik tetap dianggap aksi pengguna)
+      const noReg = (DATA_QR_TERAKHIR && DATA_QR_TERAKHIR.noRegistrasi) || 'surat';
+      const pesan = document.getElementById('notifWaPreview').textContent || '';
+
+      // Tanpa QR (mis. notifikasi tindakan persetujuan): perilaku lama.
+      if (!blob) {
+        if (link) window.open(link, '_blank');
+        tutup();
+        return;
+      }
+
+      const berkas = new File([blob], 'QR-' + String(noReg).replace(/[^\w-]+/g, '-') + '.png', { type: 'image/png' });
+      const adaHp = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      // HP: kirim foto QR + teks sekaligus lewat menu bagikan -> pilih WhatsApp.
+      if (adaHp && navigator.canShare && navigator.canShare({ files: [berkas] })) {
+        navigator.share({ files: [berkas], text: pesan }).then(tutup).catch(function (e) {
+          if (e && e.name === 'AbortError') return; // dibatalkan pengguna: modal tetap terbuka
+          if (link) window.open(link, '_blank');
+          tutup();
+        });
+        return;
+      }
+
+      // Komputer: buka chat WhatsApp pemohon, foto QR disalin ke clipboard (tinggal tempel / Ctrl+V).
       if (link) window.open(link, '_blank');
+      const unduh = function () {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = berkas.name;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        showToast('Foto QR Code diunduh. Lampirkan ke chat WhatsApp pemohon.', 'success');
+      };
+      if (navigator.clipboard && window.ClipboardItem) {
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+          .then(function () { showToast('Foto QR Code sudah disalin. Tempel (Ctrl+V) di chat WhatsApp lalu kirim.', 'success'); })
+          .catch(unduh);
+      } else {
+        unduh();
+      }
       tutup();
     });
 
@@ -1026,6 +1064,40 @@
     }, 400);
   }
 
+  /* ---------- Foto QR Code untuk dilampirkan ke WhatsApp ---------- */
+  let QR_WA_BLOB = null;
+
+  function buatFotoQrWa(link, noRegistrasi, selesai) {
+    try {
+      if (typeof QRCode === 'undefined') { selesai(null, ''); return; }
+      const tmp = document.createElement('div');
+      tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
+      document.body.appendChild(tmp);
+      new QRCode(tmp, { text: link, width: 360, height: 360, correctLevel: QRCode.CorrectLevel.M });
+      const src = tmp.querySelector('canvas');
+      const img = tmp.querySelector('img');
+      const gambar = new Image();
+      gambar.onload = function () {
+        document.body.removeChild(tmp);
+        const c = document.createElement('canvas');
+        c.width = 480; c.height = 600;
+        const g = c.getContext('2d');
+        g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+        g.fillStyle = '#0b2540'; g.textAlign = 'center';
+        g.font = 'bold 30px Arial'; g.fillText('SPARTA', 240, 48);
+        g.font = '16px Arial'; g.fillText('Sistem Pelayanan Administrasi Persuratan', 240, 74);
+        g.font = 'bold 22px Arial'; g.fillText('No. Registrasi ' + noRegistrasi, 240, 118);
+        g.imageSmoothingEnabled = false;
+        g.drawImage(gambar, 60, 140, 360, 360);
+        g.font = 'bold 20px Arial'; g.fillText('Scan QR Code untuk melihat status surat', 240, 540);
+        g.font = '15px Arial'; g.fillText('Arahkan kamera HP ke kode di atas', 240, 568);
+        c.toBlob(function (b) { selesai(b, c.toDataURL('image/png')); }, 'image/png');
+      };
+      gambar.onerror = function () { document.body.removeChild(tmp); selesai(null, ''); };
+      gambar.src = src ? src.toDataURL('image/png') : (img ? img.src : '');
+    } catch (e) { selesai(null, ''); }
+  }
+
   function tampilkanKonfirmasiNotifWa(waInfo, noRegistrasi) {
     const overlay = document.getElementById('notifWaModalOverlay');
     const btnKirim = document.getElementById('btnKirimNotifWa');
@@ -1044,6 +1116,18 @@
         DATA_QR_TERAKHIR = null;
         btnQr.style.display = 'none';
       }
+    }
+
+    // Foto QR Code untuk dilampirkan ke WhatsApp (hanya untuk notifikasi registrasi)
+    QR_WA_BLOB = null;
+    const qrBox = document.getElementById('notifWaQrBox');
+    if (qrBox) qrBox.style.display = 'none';
+    if (waInfo.linkTracking) {
+      buatFotoQrWa(waInfo.linkTracking, noRegistrasi, function (blob, dataUrl) {
+        QR_WA_BLOB = blob;
+        const pv = document.getElementById('notifWaQrPreview');
+        if (blob && pv && qrBox) { pv.src = dataUrl; qrBox.style.display = 'block'; }
+      });
     }
 
     if (waInfo.waLink) {
