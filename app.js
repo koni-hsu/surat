@@ -971,22 +971,36 @@
         return;
       }
 
-      // Komputer: buka chat WhatsApp pemohon, foto QR disalin ke clipboard (tinggal tempel / Ctrl+V).
+      // Komputer: buka chat WhatsApp pemohon + salin foto QR ke clipboard. WhatsApp tidak mengizinkan
+      // lampiran otomatis lewat tautan, jadi foto harus ditempel (Ctrl+V) di chat. Modal dibiarkan
+      // terbuka agar petunjuk & tombol "Salin ulang / Unduh" tetap terlihat.
       if (link) window.open(link, '_blank');
-      const unduh = function () {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = berkas.name;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        showToast('Foto QR Code diunduh. Lampirkan ke chat WhatsApp pemohon.', 'success');
-      };
-      if (navigator.clipboard && window.ClipboardItem) {
-        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-          .then(function () { showToast('Foto QR Code sudah disalin. Tempel (Ctrl+V) di chat WhatsApp lalu kirim.', 'success'); })
-          .catch(unduh);
-      } else {
-        unduh();
-      }
-      tutup();
+      const tip = document.getElementById('notifWaQrTip');
+      const status = document.getElementById('notifWaQrTipStatus');
+      if (tip) tip.style.display = 'block';
+      salinFotoQrWa(blob).then(function () {
+        if (status) status.textContent = '✅ Foto QR Code sudah disalin ke clipboard.';
+      }).catch(function () {
+        if (status) status.textContent = '⚠️ Foto tidak bisa disalin otomatis oleh browser. Klik "Unduh foto", lalu lampirkan manual di WhatsApp (ikon klip).';
+      });
+    });
+
+    const btnSalinUlang = document.getElementById('btnSalinUlangQr');
+    if (btnSalinUlang) btnSalinUlang.addEventListener('click', function () {
+      const status = document.getElementById('notifWaQrTipStatus');
+      if (!QR_WA_BLOB) return;
+      salinFotoQrWa(QR_WA_BLOB)
+        .then(function () { if (status) status.textContent = '✅ Foto QR Code disalin ulang. Tekan Ctrl+V di chat WhatsApp.'; })
+        .catch(function () { if (status) status.textContent = '⚠️ Gagal menyalin. Gunakan "Unduh foto".'; });
+    });
+    const btnUnduh = document.getElementById('btnUnduhQrWa');
+    if (btnUnduh) btnUnduh.addEventListener('click', function () {
+      if (!QR_WA_BLOB) return;
+      const noReg = (DATA_QR_TERAKHIR && DATA_QR_TERAKHIR.noRegistrasi) || 'surat';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(QR_WA_BLOB);
+      a.download = 'QR-' + String(noReg).replace(/[^\w-]+/g, '-') + '.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
     });
 
     const btnQr = document.getElementById('btnCetakQrNotifWa');
@@ -1067,6 +1081,11 @@
   /* ---------- Foto QR Code untuk dilampirkan ke WhatsApp ---------- */
   let QR_WA_BLOB = null;
 
+  function salinFotoQrWa(blob) {
+    if (!(navigator.clipboard && window.ClipboardItem)) return Promise.reject(new Error('Clipboard tidak didukung'));
+    return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+  }
+
   function buatFotoQrWa(link, noRegistrasi, selesai) {
     try {
       if (typeof QRCode === 'undefined') { selesai(null, ''); return; }
@@ -1127,6 +1146,7 @@
 
     // Foto QR Code untuk dilampirkan ke WhatsApp (hanya untuk notifikasi registrasi)
     QR_WA_BLOB = null;
+    const tipEl = document.getElementById('notifWaQrTip'); if (tipEl) tipEl.style.display = 'none';
     const qrBox = document.getElementById('notifWaQrBox');
     if (qrBox) qrBox.style.display = 'none';
     if (waInfo.linkTracking) {
