@@ -248,18 +248,18 @@
 
     nav.querySelectorAll('.nav-item').forEach(function (tabEl) {
       tabEl.addEventListener('click', function () {
-        const sudahAktif = tabEl.classList.contains('active');
-        nav.querySelectorAll('.nav-item').forEach(function (t) { t.classList.remove('active'); });
-        tabEl.classList.add('active');
-
-        // Dropdown Laporan: klik pertama membuka (dan menampilkan sub-menu terakhir/Harian);
-        // klik lagi saat sudah aktif -> lipat/buka daftar sub-menu.
+        // Dropdown Laporan: klik = buka/tutup daftar Harian & Bulanan (toggle murni).
+        // Saat ditutup, halaman yang sedang tampil tidak berubah.
         if (tabEl.classList.contains('has-sub')) {
           const subBox = tabEl.nextElementSibling;
-          const buka = sudahAktif ? !subBox.classList.contains('buka') : true;
+          const buka = !subBox.classList.contains('buka');
           subBox.classList.toggle('buka', buka);
           tabEl.classList.toggle('terbuka', buka);
+          if (!buka) return; // tutup saja, jangan pindah halaman / muat ulang data
         }
+
+        nav.querySelectorAll('.nav-item').forEach(function (t) { t.classList.remove('active'); });
+        tabEl.classList.add('active');
 
         // Kalau menu yang diklik ada di grup yang sedang disembunyikan (mis. navigasi programatis
         // dari kartu dashboard), otomatis pindahkan grup yang terlihat supaya tetap konsisten.
